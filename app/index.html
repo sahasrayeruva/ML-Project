@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Hyderabad Road Risk AI</title>
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
+    color: #111827;
+}
+
+.header {
+    height: 70px;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.status {
+    font-size: 13px;
+    color: #86efac;
+}
+
+.container {
+    padding: 20px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card-title {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.card-value {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.high {
+    border-left: 5px solid #dc2626;
+}
+
+.medium {
+    border-left: 5px solid #f59e0b;
+}
+
+.low {
+    border-left: 5px solid #16a34a;
+}
+
+.confidence {
+    border-left: 5px solid #2563eb;
+}
+
+.main {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+.map-container {
+    background: white;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+#map {
+    height: 650px;
+    border-radius: 10px;
+}
+
+.panel {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.search {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 15px;
+}
+
+.search-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.search-button:hover {
+    background: #1d4ed8;
+}
+
+.result {
+    padding: 12px;
+    margin-top: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.result:hover {
+    background: #f8fafc;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 20px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge-high {
+    background: #dc2626;
+}
+
+.badge-medium {
+    background: #f59e0b;
+}
+
+.badge-low {
+    background: #16a34a;
+}
+
+.details {
+    margin-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.legend {
+    margin-top: 15px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.legend-item {
+    margin: 6px 0;
+}
+
+.dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.red {
+    background: #dc2626;
+}
+
+.orange {
+    background: #f59e0b;
+}
+
+.green {
+    background: #16a34a;
+}
+
+@media (max-width: 1000px) {
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .main {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="logo">
+        🚗 Hyderabad Road Risk AI
+    </div>
+
+    <div class="status">
+        ● ML System Online
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="cards">
+
+        <div class="card high">
+            <div class="card-title">HIGH RISK ROADS</div>
+            <div class="card-value" id="high">-</div>
+        </div>
+
+        <div class="card medium">
+            <div class="card-title">MEDIUM RISK ROADS</div>
+            <div class="card-value" id="medium">-</div>
+        </div>
+
+        <div class="card low">
+            <div class="card-title">LOW RISK ROADS</div>
+            <div class="card-value" id="low">-</div>
+        </div>
+
+        <div class="card confidence">
+            <div class="card-title">AVERAGE CONFIDENCE</div>
+            <div class="card-value" id="confidence">-</div>
+        </div>
+
+    </div>
+
+    <div class="main">
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="panel">
+
+            <h2>Road Search</h2>
+
+            <input
+                id="searchInput"
+                class="search"
+                type="text"
+                placeholder="Enter road name..."
+            >
+
+            <button
+                class="search-button"
+                onclick="searchRoad()"
+            >
+                🔎 Search Road
+            </button>
+
+            <div id="searchResults"></div>
+
+            <div class="legend">
+
+                <b>Risk Legend</b>
+
+                <div class="legend-item">
+                    <span class="dot red"></span>
+                    High Risk
+                </div>
+
+                <div class="legend-item">
+                    <span class="dot orange"></span>
+                    Medium Risk
+                </div>
+
+                <div class="legend-item">
+                    <span class="dot green"></span>
+                    Low Risk
+                </div>
+
+            </div>
+
+            <div class="details" id="details">
+
+                <h3>Road Details</h3>
+
+                <p>
+                    Click a road on the map or search for a road.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+const map = L.map("map").setView(
+    [17.3850, 78.4867],
+    11
+);
+
+L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        attribution: "&copy; OpenStreetMap contributors"
+    }
+).addTo(map);
+
+let roadLayers = [];
+
+function riskColor(risk) {
+
+    if (risk === "High") {
+        return "#dc2626";
+    }
+
+    if (risk === "Medium") {
+        return "#f59e0b";
+    }
+
+    return "#16a34a";
+}
+
+function riskBadge(risk) {
+
+    if (risk === "High") {
+        return "badge-high";
+    }
+
+    if (risk === "Medium") {
+        return "badge-medium";
+    }
+
+    return "badge-low";
+}
+
+function showDetails(road) {
+
+    document.getElementById("details").innerHTML = `
+
+        <h3>${road.name || "Unnamed Road"}</h3>
+
+        <div class="detail-row">
+            <span>Risk</span>
+            <span class="badge ${riskBadge(road.risk)}">
+                ${road.risk}
+            </span>
+        </div>
+
+        <div class="detail-row">
+            <span>Confidence</span>
+            <span>
+                ${(road.confidence * 100).toFixed(2)}%
+            </span>
+        </div>
+
+        <div class="detail-row">
+            <span>Road Type</span>
+            <span>${road.road_type}</span>
+        </div>
+
+        <div class="detail-row">
+            <span>Speed</span>
+            <span>${road.speed ?? "N/A"}</span>
+        </div>
+
+        <div class="detail-row">
+            <span>Lanes</span>
+            <span>${road.lanes ?? "N/A"}</span>
+        </div>
+
+        <div class="detail-row">
+            <span>Length</span>
+            <span>${road.length} m</span>
+        </div>
+
+        <div class="detail-row">
+            <span>Historical Accidents</span>
+            <span>${road.accidents}</span>
+        </div>
+    `;
+}
+
+async function loadStats() {
+
+    try {
+
+        const response = await fetch("/api/stats");
+
+        const data = await response.json();
+
+        document.getElementById("high").innerText =
+            data.high.toLocaleString();
+
+        document.getElementById("medium").innerText =
+            data.medium.toLocaleString();
+
+        document.getElementById("low").innerText =
+            data.low.toLocaleString();
+
+        document.getElementById("confidence").innerText =
+            (data.average_confidence * 100).toFixed(2) + "%";
+
+    } catch (error) {
+
+        console.error(
+            "Could not load statistics:",
+            error
+        );
+
+    }
+}
+
+async function loadRoads() {
+
+    try {
+
+        const response = await fetch("/api/roads");
+
+        const roads = await response.json();
+
+        roads.forEach(road => {
+
+            if (!road.geometry) {
+                return;
+            }
+
+            let layer;
+
+            if (
+                Array.isArray(road.geometry[0]) &&
+                Array.isArray(road.geometry[0][0])
+            ) {
+
+                layer = L.polyline(
+                    road.geometry.flat(),
+                    {
+                        color: riskColor(road.risk),
+                        weight: 3,
+                        opacity: 0.8
+                    }
+                );
+
+            } else {
+
+                layer = L.polyline(
+                    road.geometry,
+                    {
+                        color: riskColor(road.risk),
+                        weight: 3,
+                        opacity: 0.8
+                    }
+                );
+
+            }
+
+            layer.addTo(map);
+
+            layer.on(
+                "click",
+                () => showDetails(road)
+            );
+
+            roadLayers.push(layer);
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Could not load roads:",
+            error
+        );
+
+    }
+}
+async function loadAccidents() {
+    const response = await fetch("/api/accidents");
+    const accidents = await response.json();
+
+    accidents.forEach(accident => {
+        let color = "#16a34a";
+
+        if (accident.accident_severity === "fatal") {
+            color = "#dc2626";
+        } else if (accident.accident_severity === "major") {
+            color = "#f59e0b";
+        }
+
+        L.circleMarker(
+            [accident.latitude, accident.longitude],
+            {
+                radius: 5,
+                fillColor: color,
+                color: "#ffffff",
+                weight: 1,
+                fillOpacity: 0.9
+            }
+        )
+        .bindPopup(`
+            <b>Accident</b><br>
+            Severity: ${accident.accident_severity}<br>
+            Date: ${accident.date}<br>
+            Time: ${accident.time}<br>
+            Weather: ${accident.weather}<br>
+            Cause: ${accident.cause}<br>
+            Vehicles: ${accident.vehicles_involved}<br>
+            Casualties: ${accident.casualties}<br>
+            Traffic: ${accident.traffic_density}
+        `)
+        .addTo(map);
+    });
+}
+async function searchRoad() {
+
+    const query =
+        document.getElementById(
+            "searchInput"
+        ).value.trim();
+
+    if (!query) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/search?q=" +
+            encodeURIComponent(query)
+        );
+
+        const results = await response.json();
+
+        const container =
+            document.getElementById(
+                "searchResults"
+            );
+
+        container.innerHTML = "";
+
+        results.forEach(road => {
+
+            const div =
+                document.createElement("div");
+
+            div.className = "result";
+
+            div.innerHTML = `
+
+                <b>${road.name}</b>
+
+                <br>
+
+                <span class="badge ${riskBadge(road.risk)}">
+                    ${road.risk}
+                </span>
+
+                <br>
+
+                Confidence:
+                ${(road.confidence * 100).toFixed(1)}%
+
+            `;
+
+            div.onclick = () => {
+
+                showDetails(road);
+
+            };
+
+            container.appendChild(div);
+
+        });
+
+        if (results.length === 0) {
+
+            container.innerHTML =
+                "<p>No matching roads found.</p>";
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Search error:",
+            error
+        );
+
+    }
+}
+
+loadStats();
+
+loadRoads();
+loadAccidents();
+
+</script>
+
+</body>
+</html>
